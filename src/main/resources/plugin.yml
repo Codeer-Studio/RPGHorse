@@ -2,3 +2,10 @@ name: RPGHorse
 version: '1.0-SNAPSHOT'
 main: io.github.CodeerStudio.RPGHorse.RPGHorse
 api-version: '1.21'
+commands:
+  saddle:
+    description: Gives the player a custom saddle.
+    usage: /saddle
+    aliases: []
+    permission: saddle
+    permission-message: You do not have the required permission to spawn a saddle.
