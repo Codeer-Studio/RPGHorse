@@ -29,6 +29,7 @@ public class Saddle implements CommandExecutor {
             meta.setDisplayName("Basic Horse");
 
             List<String> lore = new ArrayList<>();
+            lore.add(ChatColor.GREEN + "Level: " + ChatColor.YELLOW + "1");
             lore.add(ChatColor.GREEN + "Speed: " + ChatColor.YELLOW + "0.01");
             lore.add(ChatColor.GREEN + "Jump Power: " + ChatColor.YELLOW + "1.0");
             lore.add(ChatColor.GRAY + "Use it wisely, and your horse will grow stronger!");

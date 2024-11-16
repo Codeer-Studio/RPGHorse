@@ -1,6 +1,8 @@
 package io.github.CodeerStudio.RPGHorse.handlers;
 
 import io.github.CodeerStudio.RPGHorse.RPGHorse;
+import io.github.CodeerStudio.RPGHorse.model.HorseData;
+import io.papermc.paper.event.entity.EntityMoveEvent;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
@@ -14,6 +16,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -24,7 +27,8 @@ import java.util.UUID;
 public class SaddleHandler implements Listener {
 
     private final HashMap<UUID, Horse> playerHorses = new HashMap<>();
-    private final int HORSE_RANGE = 25;
+    private final HashMap<UUID, HorseData> playerHorseData = new HashMap<>();
+    private final int LEVEL_UP_DISTANCE = 20;
 
     /**
      * Constructor for SaddleHandler.
@@ -74,12 +78,54 @@ public class SaddleHandler implements Listener {
                     processSaddleLore(meta.getLore(), newHorse, player);
                 }
 
+                // Add HorseData for the new horse
+                playerHorseData.put(newHorse.getUniqueId(), new HorseData(newHorse.getLocation()));
+
                 // Store the new horse for the player
                 playerHorses.put(playerId, newHorse);
                 player.sendMessage("A new horse has been summoned for you to ride!");
 
                 // Cancel the event to prevent normal saddle behavior
                 event.setCancelled(true);
+            }
+        }
+    }
+
+    /**
+     * Listens for the movement of the horse to track distance traveled.
+     * When the horse travels a certain distance (500 blocks), it levels up.
+     *
+     * @param event The EntityMoveEvent triggered when a horse moves.
+     */
+    @EventHandler
+    public void onHorseMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+
+        // Check if the player is riding a horse
+        if (player.getVehicle() instanceof Horse) {
+            Horse horse = (Horse) player.getVehicle();
+            UUID horseId = horse.getUniqueId();
+
+            // Proceed only if the horse is registered in playerHorseData
+            if (playerHorseData.containsKey(horseId)) {
+                HorseData horseData = playerHorseData.get(horseId);
+                double distanceTraveled = horseData.getDistanceTraveled();
+
+                // Calculate the distance moved by the player (while riding the horse)
+                double distance = player.getLocation().distance(horseData.getLastPosition());
+
+                distanceTraveled += distance;
+
+                // If the horse has traveled enough distance, level it up
+                while (distanceTraveled >= LEVEL_UP_DISTANCE) {
+                    Bukkit.getLogger().info("Horse level up");
+                    levelUpHorse(horse);  // Level up the horse
+                    distanceTraveled -= LEVEL_UP_DISTANCE;  // Reduce the traveled distance by the level-up threshold
+                }
+
+                // Update the total distance traveled and store the last position
+                horseData.setDistanceTraveled(distanceTraveled);
+                horseData.setLastPosition(player.getLocation());  // Track player's position as the horse's location
             }
         }
     }
@@ -137,6 +183,9 @@ public class SaddleHandler implements Listener {
         newHorse.getInventory().setSaddle(new ItemStack(Material.SADDLE));
         newHorse.addPassenger(player);
 
+        playerHorseData.put(newHorse.getUniqueId(), new HorseData(newHorse.getLocation()));
+
+
         return newHorse;
     }
 
@@ -177,5 +226,26 @@ public class SaddleHandler implements Listener {
         // Apply the parsed stats to the horse
         newHorse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(speed + 0.25); // Adjust speed relative to default speed
         newHorse.setJumpStrength(jumpPower);
+    }
+
+    /**
+     * Levels up the horse, increasing its stats.
+     *
+     * @param horse The horse to level up.
+     */
+    private void levelUpHorse(Horse horse) {
+        // Example leveling up logic
+        double newSpeed = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getBaseValue() + 0.05;
+        double newHealth = horse.getMaxHealth() + 1.0;
+
+        // Apply new stats to the horse
+        horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(newSpeed);
+        horse.setMaxHealth(newHealth);
+        horse.setHealth(newHealth);
+
+        Player player = (Player) horse.getOwner();
+
+        player.sendMessage("Your horse leveled up! New speed and health have been applied.");
+
     }
 }
