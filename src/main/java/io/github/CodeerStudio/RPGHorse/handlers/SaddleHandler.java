@@ -9,10 +9,16 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.HashMap;
+import java.util.UUID;
+
 public class SaddleHandler implements Listener {
+
+    private final HashMap<UUID, Horse> playerHorses = new HashMap<>();
 
     public SaddleHandler(RPGHorse plugin) {
         Bukkit.getPluginManager().registerEvents(this, plugin);
@@ -20,31 +26,58 @@ public class SaddleHandler implements Listener {
 
     @EventHandler(priority = EventPriority.NORMAL)
     public void onSaddleUse_Normal(PlayerInteractEvent event) {
-        if (event.getAction().toString().contains("RIGHT_CLICK")) {
-            ItemStack item = event.getItem();
 
-            if (item != null && item.getType() == Material.SADDLE) {
-                Player player = event.getPlayer();
+        if (event.getAction() != Action.RIGHT_CLICK_AIR) {
+            return;
+        }
 
-                Horse horse = (Horse) player.getWorld().spawnEntity(player.getLocation(), EntityType.HORSE);
+        ItemStack item = event.getItem();
 
-                horse.setOwner(player);
-                horse.setTamed(true);
-                horse.setCustomName(player.getName() + "'s Horse");
-                horse.setCustomNameVisible(true);
-                horse.setAdult();
-                horse.setMaxHealth(30.0); // Set the horse's health
-                horse.setHealth(30.0);
-                horse.getInventory().setSaddle(new ItemStack(Material.SADDLE));
+        if (item != null && item.getType() == Material.SADDLE) {
+            Player player = event.getPlayer();
+            UUID playerId = player.getUniqueId();
 
+            if (playerHorses.containsKey(playerId)) {
+                Horse previousHorse = playerHorses.get(playerId);
 
-                horse.addPassenger(player);
-
-                player.sendMessage("A horse has been summoned for you to ride!");
-                event.setCancelled(true);
+                if (previousHorse != null && !previousHorse.isDead()) {
+                    previousHorse.remove();
+                    player.sendMessage("Your previous horse has been despawned");
+                }
             }
+
+            Horse newHorse = (Horse) player.getWorld().spawnEntity(player.getLocation(), EntityType.HORSE);
+
+            // Customize the horse
+            newHorse.setOwner(player);
+            newHorse.setTamed(true);
+            newHorse.setCustomName(player.getName() + "'s Horse");
+            newHorse.setCustomNameVisible(true);
+            newHorse.setAdult();
+            newHorse.setMaxHealth(30.0);
+            newHorse.setHealth(30.0);
+            newHorse.getInventory().setSaddle(new ItemStack(Material.SADDLE));
+
+            // Mount the player on the new horse
+            newHorse.addPassenger(player);
+
+            // Store the new horse in the map
+            playerHorses.put(playerId, newHorse);
+
+            // Notify the player
+            player.sendMessage("A new horse has been summoned for you to ride!");
+
+            event.setCancelled(true);
         }
     }
 
+    public void removeHorses() {
+        for (Horse horse: playerHorses.values()) {
+            if (horse != null && !horse.isDead()) {
+                horse.remove();
+            }
+        }
 
+        playerHorses.clear();
+    }
 }
