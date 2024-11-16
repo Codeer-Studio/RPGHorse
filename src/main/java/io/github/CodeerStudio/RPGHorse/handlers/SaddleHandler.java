@@ -19,11 +19,25 @@ import java.util.UUID;
 public class SaddleHandler implements Listener {
 
     private final HashMap<UUID, Horse> playerHorses = new HashMap<>();
+    private final int HORSE_RANGE = 25;
 
+    /**
+     * Constructor for SaddleHandler.
+     * Registers this class as an event listener with the given plugin instance.
+     *
+     * @param plugin The plugin instance that will register this listener.
+     */
     public SaddleHandler(RPGHorse plugin) {
         Bukkit.getPluginManager().registerEvents(this, plugin);
     }
 
+    /**
+     * Event handler for when a player right-clicks with a saddle item.
+     * This method will spawn a new horse and assign it to the player if it's not already holding one.
+     * If the player already has a horse, the previous one will be removed.
+     *
+     * @param event The PlayerInteractEvent triggered by the player's right-click.
+     */
     @EventHandler(priority = EventPriority.NORMAL)
     public void onSaddleUse_Normal(PlayerInteractEvent event) {
 
@@ -57,20 +71,20 @@ public class SaddleHandler implements Listener {
             newHorse.setMaxHealth(30.0);
             newHorse.setHealth(30.0);
             newHorse.getInventory().setSaddle(new ItemStack(Material.SADDLE));
-
-            // Mount the player on the new horse
             newHorse.addPassenger(player);
 
-            // Store the new horse in the map
             playerHorses.put(playerId, newHorse);
 
-            // Notify the player
             player.sendMessage("A new horse has been summoned for you to ride!");
 
             event.setCancelled(true);
         }
     }
 
+    /**
+     * Removes all currently summoned horses from all players.
+     * This method will remove any horses stored in the playerHorses map.
+     */
     public void removeHorses() {
         for (Horse horse: playerHorses.values()) {
             if (horse != null && !horse.isDead()) {
@@ -80,4 +94,5 @@ public class SaddleHandler implements Listener {
 
         playerHorses.clear();
     }
+
 }
