@@ -122,7 +122,6 @@ public class SaddleHandler implements Listener {
 
                 // If the horse has traveled enough distance, level it up
                 while (distanceTraveled >= LEVEL_UP_DISTANCE) {
-                    Bukkit.getLogger().info("Horse level up");
                     levelUpHorse(horse);  // Level up the horse
                     distanceTraveled -= LEVEL_UP_DISTANCE;  // Reduce the traveled distance by the level-up threshold
                 }
@@ -244,7 +243,7 @@ public class SaddleHandler implements Listener {
     private void levelUpHorse(Horse horse) {
 
         double newSpeed = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getBaseValue() + 0.01;
-        double newJumpPower = horse.getJumpStrength() + 0.5;
+        double newJumpPower = horse.getJumpStrength() + 0.1;
 
         // Apply new stats to the horse
         horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(newSpeed);
@@ -277,8 +276,8 @@ public class SaddleHandler implements Listener {
             }
 
             lore.add(ChatColor.GREEN + "Level: " + ChatColor.YELLOW + currentLevel);
-            lore.add(ChatColor.GREEN + "Speed: " + ChatColor.YELLOW + newSpeed);
-            lore.add(ChatColor.GREEN + "Jump Power: " + ChatColor.YELLOW + newJumpPower);
+            lore.add(ChatColor.GREEN + "Speed: " + ChatColor.YELLOW + String.format("%.2f", newSpeed));
+            lore.add(ChatColor.GREEN + "Jump Power: " + ChatColor.YELLOW + String.format("%.2f", newJumpPower));
             lore.add(ChatColor.GRAY + "Use it wisely, and your horse will grow stronger!");
 
             meta.setLore(lore);
@@ -288,7 +287,5 @@ public class SaddleHandler implements Listener {
         } else {
             player.sendMessage(ChatColor.RED + "Failed to update the saddle stats. Make sure your horse has a saddle equipped.");
         }
-
-
     }
 }
