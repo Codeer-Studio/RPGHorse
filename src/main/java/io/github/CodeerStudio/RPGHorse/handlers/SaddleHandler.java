@@ -241,14 +241,6 @@ public class SaddleHandler implements Listener {
      * @param horse The horse to level up.
      */
     private void levelUpHorse(Horse horse) {
-
-        double newSpeed = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getBaseValue() + 0.01;
-        double newJumpPower = horse.getJumpStrength() + 0.1;
-
-        // Apply new stats to the horse
-        horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(newSpeed);
-        horse.setJumpStrength(newJumpPower);
-
         Player player = (Player) horse.getOwner();
 
         ItemStack saddle = horseSaddles.get(horse.getUniqueId());
@@ -257,7 +249,7 @@ public class SaddleHandler implements Listener {
             ItemMeta meta = saddle.getItemMeta();
             List<String> lore = new ArrayList<>();
 
-            // Retrieve and increment the level from the lore
+            // Retrieve the current level from the lore
             int currentLevel = 1; // Default level
             if (meta.hasLore()) {
                 for (String line : meta.getLore()) {
@@ -266,6 +258,12 @@ public class SaddleHandler implements Listener {
                         levelStr = levelStr.replaceAll("§[0-9a-fA-Fk-or]", ""); // Remove color codes
                         try {
                             currentLevel = Integer.parseInt(levelStr);
+
+                            if (currentLevel >= 20) { // Level cap check
+                                player.sendMessage(ChatColor.YELLOW + "Your horse has reached the maximum level of 20!");
+                                return; // Exit the method, preventing further level-ups
+                            }
+
                             currentLevel++; // Increment the level
                         } catch (NumberFormatException e) {
                             player.sendMessage(ChatColor.RED + "Error reading current level. Resetting to Level 1.");
@@ -275,6 +273,15 @@ public class SaddleHandler implements Listener {
                 }
             }
 
+            // New stats are calculated only if the level is below the cap
+            double newSpeed = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getBaseValue() + 0.01;
+            double newJumpPower = horse.getJumpStrength() + 0.1;
+
+            // Apply new stats to the horse
+            horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(newSpeed);
+            horse.setJumpStrength(newJumpPower);
+
+            // Update the lore with new stats
             lore.add(ChatColor.GREEN + "Level: " + ChatColor.YELLOW + currentLevel);
             lore.add(ChatColor.GREEN + "Speed: " + ChatColor.YELLOW + String.format("%.2f", newSpeed));
             lore.add(ChatColor.GREEN + "Jump Power: " + ChatColor.YELLOW + String.format("%.2f", newJumpPower));
@@ -283,7 +290,7 @@ public class SaddleHandler implements Listener {
             meta.setLore(lore);
             saddle.setItemMeta(meta);
 
-            player.sendMessage(ChatColor.GREEN + "The saddle has been updated with your horse's new stats.");
+            player.sendMessage(ChatColor.GREEN + "Your horse leveled up! The saddle has been updated with new stats.");
         } else {
             player.sendMessage(ChatColor.RED + "Failed to update the saddle stats. Make sure your horse has a saddle equipped.");
         }
