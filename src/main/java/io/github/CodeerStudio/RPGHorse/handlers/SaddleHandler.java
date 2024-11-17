@@ -30,7 +30,7 @@ public class SaddleHandler implements Listener {
     private final HashMap<UUID, Horse> playerHorses = new HashMap<>();
     private final HashMap<UUID, HorseData> playerHorseData = new HashMap<>();
     private final HashMap<UUID, ItemStack> horseSaddles = new HashMap<>();
-    private final int LEVEL_UP_DISTANCE = 20;
+    private final int LEVEL_UP_DISTANCE = 250;
 
     /**
      * Constructor for SaddleHandler.
@@ -260,7 +260,6 @@ public class SaddleHandler implements Listener {
                             currentLevel = Integer.parseInt(levelStr);
 
                             if (currentLevel >= 20) { // Level cap check
-                                player.sendMessage(ChatColor.YELLOW + "Your horse has reached the maximum level of 20!");
                                 return; // Exit the method, preventing further level-ups
                             }
 
@@ -275,7 +274,7 @@ public class SaddleHandler implements Listener {
 
             // New stats are calculated only if the level is below the cap
             double newSpeed = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getBaseValue() + 0.01;
-            double newJumpPower = horse.getJumpStrength() + 0.1;
+            double newJumpPower = horse.getJumpStrength() + 0.01;
 
             // Apply new stats to the horse
             horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(newSpeed);
