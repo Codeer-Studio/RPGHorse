@@ -20,6 +20,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +29,7 @@ public class SaddleHandler implements Listener {
 
     private final HashMap<UUID, Horse> playerHorses = new HashMap<>();
     private final HashMap<UUID, HorseData> playerHorseData = new HashMap<>();
+    private final HashMap<UUID, ItemStack> horseSaddles = new HashMap<>();
     private final int LEVEL_UP_DISTANCE = 20;
 
     /**
@@ -84,6 +86,8 @@ public class SaddleHandler implements Listener {
                 // Store the new horse for the player
                 playerHorses.put(playerId, newHorse);
                 player.sendMessage("A new horse has been summoned for you to ride!");
+
+                horseSaddles.put(newHorse.getUniqueId(), item);
 
                 // Cancel the event to prevent normal saddle behavior
                 event.setCancelled(true);
@@ -156,7 +160,12 @@ public class SaddleHandler implements Listener {
             Horse previousHorse = playerHorses.get(playerId);
 
             if (previousHorse != null && !previousHorse.isDead()) {
+                UUID horseId = previousHorse.getUniqueId();
                 previousHorse.remove();
+
+                horseSaddles.remove(horseId);
+                playerHorseData.remove(horseId);
+
                 player.sendMessage("Your previous horse has been despawned");
             }
         }
@@ -184,7 +193,6 @@ public class SaddleHandler implements Listener {
         newHorse.addPassenger(player);
 
         playerHorseData.put(newHorse.getUniqueId(), new HorseData(newHorse.getLocation()));
-
 
         return newHorse;
     }
@@ -234,18 +242,53 @@ public class SaddleHandler implements Listener {
      * @param horse The horse to level up.
      */
     private void levelUpHorse(Horse horse) {
-        // Example leveling up logic
-        double newSpeed = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getBaseValue() + 0.05;
-        double newHealth = horse.getMaxHealth() + 1.0;
+
+        double newSpeed = horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).getBaseValue() + 0.01;
+        double newJumpPower = horse.getJumpStrength() + 0.5;
 
         // Apply new stats to the horse
         horse.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(newSpeed);
-        horse.setMaxHealth(newHealth);
-        horse.setHealth(newHealth);
+        horse.setJumpStrength(newJumpPower);
 
         Player player = (Player) horse.getOwner();
 
-        player.sendMessage("Your horse leveled up! New speed and health have been applied.");
+        ItemStack saddle = horseSaddles.get(horse.getUniqueId());
+
+        if (saddle != null && saddle.getItemMeta() != null) {
+            ItemMeta meta = saddle.getItemMeta();
+            List<String> lore = new ArrayList<>();
+
+            // Retrieve and increment the level from the lore
+            int currentLevel = 1; // Default level
+            if (meta.hasLore()) {
+                for (String line : meta.getLore()) {
+                    if (line.contains("Level:")) {
+                        String levelStr = line.split(":")[1].trim();
+                        levelStr = levelStr.replaceAll("§[0-9a-fA-Fk-or]", ""); // Remove color codes
+                        try {
+                            currentLevel = Integer.parseInt(levelStr);
+                            currentLevel++; // Increment the level
+                        } catch (NumberFormatException e) {
+                            player.sendMessage(ChatColor.RED + "Error reading current level. Resetting to Level 1.");
+                        }
+                        break;
+                    }
+                }
+            }
+
+            lore.add(ChatColor.GREEN + "Level: " + ChatColor.YELLOW + currentLevel);
+            lore.add(ChatColor.GREEN + "Speed: " + ChatColor.YELLOW + newSpeed);
+            lore.add(ChatColor.GREEN + "Jump Power: " + ChatColor.YELLOW + newJumpPower);
+            lore.add(ChatColor.GRAY + "Use it wisely, and your horse will grow stronger!");
+
+            meta.setLore(lore);
+            saddle.setItemMeta(meta);
+
+            player.sendMessage(ChatColor.GREEN + "The saddle has been updated with your horse's new stats.");
+        } else {
+            player.sendMessage(ChatColor.RED + "Failed to update the saddle stats. Make sure your horse has a saddle equipped.");
+        }
+
 
     }
 }
